@@ -21,6 +21,7 @@ KSP Add-on Version Checker.
 import config
 import os, sys
 import versionComparator as verComp
+import modFinder
 
 def main():
     # Find config folder.
@@ -40,41 +41,28 @@ def main():
     print "+----------------------------------------------+"
 
     try:
-        selfVersionLocal = os.path.join(os.path.expanduser('.'), 'KSP-AVC.version')
-        selfVersionRemote = verComp.getRemote(selfVersionLocal)
-        comp = verComp.versionComparator(selfVersionLocal, selfVersionRemote)
-        if not comp.compareName():
-            raise Exception("Remote version file is for %s" % comp.remote['NAME'])
-        if not comp.compareURL():
-            raise Exception("Remote version file reports different URL.")
-        if not comp.compareVersion():
-            print "  [UPDATE] A new version(%s) of KSP-AVC is available. (You have %s)" % \
-            (comp.getVersion('r'), comp.getVersion('l'))
+        print verComp.compareAVCVersions()
     except Exception as e:
         print "[ERROR] Couldn't update KSP-AVC. %s" % e
         cfg.save()
         sys.exit(1)
 
-    toUpdate = set()
-    mods = findMods(cfg)
     print "Starting add-on checks."
+    toUpdate = set()
+    mods = modFinder.find(cfg)
     for mod in mods:
-        remote = verComp.getRemote(mod)
-        comp = verComp.versionComparator(mod, remote)
-        modname = comp.local['NAME']
-        print "[ADD-ON] %s" % modname
-        if not comp.compareName():
-            print "  [ERROR] Online version file is for different mod (%s)." % comp.remote['NAME']
-            print "          This is very bad. Check this mod's version manually!"
-            continue
-        if not comp.compareSource():
-            print "  [WARNING] Online version has the wrong URL. A new version"
-            print "            might be available at a new download location."
+        try:
+            modname = mod['NAME']
+            print "[ADD-ON] %s" % modname
 
-        if not comp.compareMajor() or not comp.compareMinor():
-            print "  [UPDATE] Latest version: %s, Installed version: %s" % \
-                (comp.getVersion('r'), comp.getVersion('l'))
-            toUpdate.add(modname)
+            updateRequired = verComp.compareMod(mod)
+            if updateRequired:
+                print "  [UPDATE] Latest version: %s, Installed version: %s" % \
+                    (comp.getVersion('r'), comp.getVersion('l'))
+                toUpdate.add(modname)
+        except Exception as e:
+            print "[ERROR] Couldn't update module %s because %s" % modname, e
+
     # End for
     if len(toUpdate):
         print ""
@@ -86,17 +74,6 @@ def main():
     #Shutdown procedure
     cfg.save()
     sys.exit(0)
-
-def findMods(cfg):
-    mods = set()
-    # Walk through the directories
-    for path, folders, files in os.walk(cfg.get('gamedata_dir')):
-        # Walk through the files.
-        for f in files:
-            # Found a version file.
-            if f.lower().endswith(".version"):
-                mods.add(os.path.join(path, f))
-    return mods
 
 # Startup sequence
 if __name__ == '__main__':

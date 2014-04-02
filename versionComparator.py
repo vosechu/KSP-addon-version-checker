@@ -21,24 +21,37 @@ allows comparing of the contents.
 import json, os
 from urllib2 import urlopen
 
-class versionComparator(object):
+class VersionComparator(object):
     """ Initialize the comparator. """
-    def __init__(self, l, r):
-        with open(l, 'r') as f:
+    def __init__(self, localVersion, remoteVersion):
+        with open(localVersion, 'r') as f:
             self.local = json.load(f)
-        f = urlopen(r)
+        f = urlopen(remoteVersion)
         self.remote = json.load(f)
         f.close()
 
-    """ Are the major versions equal? """
-    def compareMajor(self):
+    """ Compare two modules. Returns a printable string if there is a version difference """
+    def compare(self):
+        if not self.__compareName():
+            raise Exception("Remote version file is for %s" % self.remote['NAME'])
+        if not self.__compareURL():
+            raise Exception("Remote version file reports different URL.")
+        if not self.__compareVersion():
+            return "  [UPDATE] A new version(%s) of %s is available. (You have %s)" % \
+            (self.__getVersion('r'), self.local['NAME'], self.__getVersion('l'))
+
+    def __compareVersion(self):
+        return self.__compareMajor and self.__compareMinor
+
+    def __compareMajor(self):
         return self.local['VERSION']['MAJOR'] == self.remote['VERSION']['MAJOR']
 
-    """ Are the minor versions equal? """
-    def compareMinor(self):
+    def __compareMinor(self):
         return self.local['VERSION']['MINOR'] == self.remote['VERSION']['MINOR']
 
-    def getVersion(self, side):
+    # TODO: Add __comparePatch to be inline with semantic versioning http://semver.org/
+
+    def __getVersion(self, side):
         if side in ('l','local'):
             v = self.local
         elif side in ('r', 'remote'):
@@ -47,23 +60,26 @@ class versionComparator(object):
             return '0.0'
         return '%s.%s' % (v['VERSION']['MAJOR'], v['VERSION']['MINOR'])
 
-    def compareVersion(self):
-        return self.compareMajor and self.compareMinor
-
-    """ Ensures the remote file is from the proper source.
-    If this returns false, the remote file failed loading
-    or something went terribly wrong. """
-    def compareURL(self):
+    def __compareURL(self):
         return self.local['URL'] == self.remote['URL']
 
-    """ Ensures the remote file is for the same mod.
-    if this returns false, we're probably
-    downloading the wrong file. """
-    def compareName(self):
+    def __compareName(self):
         return self.local['NAME'] == self.remote['NAME']
 
-""" Gets the URL for the remote file as stated in the local file. """
-def getRemote(fle):
+""" Discover whether AVC itself needs to be updated """
+def compareAVCVersions():
+    localVersion = os.path.join(os.path.expanduser('.'), 'KSP-AVC.version')
+    remoteVersion = __getRemote(localVersion)
+    vc = VersionComparator(localVersion, remoteVersion)
+    return vc.compare()
+
+""" Discover whether a mod needs to be updated """
+def compareMod(local):
+    remoteVersion = verComp.__getRemote(local['URL'])
+    vc = VersionComparator(localVersion, remoteVersion)
+    return vc.compare()
+
+def __getRemote(fle):
     if not os.path.exists(fle):
         raise OSError("File not found.")
 
@@ -73,4 +89,3 @@ def getRemote(fle):
 
 if __name__ == '__main__':
     print __doc__
-
