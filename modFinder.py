@@ -2,7 +2,7 @@
 """
 The modFinder class hunts through the system looking for mods to compare
 """
-# Copyright 2014 Dimitri "Tyrope" Molenaars
+# Copyright 2014 Dimitri "Tyrope" Molenaars, Chuck Lauer Vose (@vosechu)
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

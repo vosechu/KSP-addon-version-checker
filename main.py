@@ -4,7 +4,7 @@
 """
 KSP Add-on Version Checker.
 """
-# Copyright 2014 Dimitri "Tyrope" Molenaars
+# Copyright 2014 Dimitri "Tyrope" Molenaars, Chuck Lauer Vose (@vosechu)
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,10 +40,7 @@ def main():
     print "|        Officially recognized by them.        |"
     print "+----------------------------------------------+"
 
-    try:
-        print verComp.VersionComparator.compareAVCVersions()
-    except Exception as e:
-        print "[ERROR] Couldn't update KSP-AVC. %s" % e
+    if verComp.VersionComparator.compareAVCVersions():
         cfg.save()
         sys.exit(1)
 
@@ -52,7 +49,7 @@ def main():
     mods = modFinder.find(cfg)
     for mod in mods:
         try:
-            if verComp.compareMod(mod):
+            if verComp.VersionComparator.compareMod(mod):
                 toUpdate.add(mod['NAME'])
         except Exception as e:
             print "[ERROR] Couldn't update module %s because %s" % mod['NAME'], e

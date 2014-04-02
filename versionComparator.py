@@ -4,7 +4,7 @@ The versionComparator class uses 2
 provided *.version files and
 allows comparing of the contents.
 """
-# Copyright 2014 Dimitri "Tyrope" Molenaars
+# Copyright 2014 Dimitri "Tyrope" Molenaars, Chuck Lauer Vose (@vosechu)
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,27 +25,39 @@ class VersionComparator(object):
     """ Discover whether AVC itself needs to be updated """
     @classmethod
     def compareAVCVersions(cls):
-        localVersion = os.path.join(os.path.expanduser('.'), 'KSP-AVC.version')
-        remoteVersion = cls.__getRemote(localVersion)
-        vc = cls(localVersion, remoteVersion)
-        return vc.compare()
+        try:
+            localVersion = os.path.join(os.path.expanduser('.'), 'KSP-AVC.version')
+            remoteVersion = cls.__getRemote(localVersion)
+
+            vc = cls(localVersion, remoteVersion)
+            if vc.isUpdateNeeded():
+                print "  [UPDATE] A new version(%s) of KSP-AVC is available. (You have %s)" % \
+                (vc.__getVersion('r'), vc.__getVersion('l'))
+                return True
+            else:
+                return False
+
+        except Exception as e:
+            print "[ERROR] Couldn't update KSP-AVC. %s" % e
+            return False
+
 
     """ Discover whether a mod needs to be updated """
     @classmethod
     def compareMod(cls, localVersion):
         remoteVersion = cls.__getRemote(localVersion)
         vc = cls(localVersion, remoteVersion)
-        return vc.compare()
+        return vc.isUpdateNeeded()
 
-    """ Discover whether a mod needs an update by comparing hashes """
-    @classmethod
-    def compareByHash(cls, localVersion):
-        try:
-            remote = cls.__guessRemote()
-            vc = cls(localVersion, remoteVersion)
-            return vc.compareByHash()
-        except Exception as e:
-            print "[ERROR] Couldn't update module %s because %s" % local['NAME'], e
+    # """ Discover whether a mod needs an update by comparing hashes """
+    # @classmethod
+    # def compareByHash(cls, localVersion):
+    #     try:
+    #         remoteVersion = cls.__guessRemote()
+    #         vc = cls(localVersion, remoteVersion)
+    #         return vc.isUpdateNeededByHash()
+    #     except Exception as e:
+    #         print "[ERROR] Couldn't update module %s because %s" % localVersion['NAME'], e
 
     def __init__(self, localVersion, remoteVersion):
         with open(localVersion, 'r') as f:
@@ -55,13 +67,15 @@ class VersionComparator(object):
         f.close()
 
     """ Compare two modules. Returns a printable string if there is a version difference """
-    def compare(self):
+    def isUpdateNeeded(self):
         if not self.__compareName():
             raise Exception("Remote version file is for %s" % self.remote['NAME'])
         if not self.__compareURL():
             raise Exception("Remote version file reports different URL.")
         if not self.__compareVersion():
-            return true
+            return True
+        else:
+            return False
 
     def __compareVersion(self):
         return self.__compareMajor and self.__compareMinor
