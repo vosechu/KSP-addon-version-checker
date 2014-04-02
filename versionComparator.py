@@ -26,7 +26,7 @@ class VersionComparator(object):
     @classmethod
     def compareAVCVersions(cls):
         try:
-            localVersion = os.path.join(os.path.expanduser('.'), 'KSP-AVC.version')
+            localVersion = os.path.join(os.path.abspath('.'), 'KSP-AVC.version')
             remoteVersion = cls.__getRemote(localVersion)
 
             vc = cls(localVersion, remoteVersion)
