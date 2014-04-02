@@ -41,7 +41,7 @@ def main():
     print "+----------------------------------------------+"
 
     try:
-        print verComp.compareAVCVersions()
+        print verComp.VersionComparator.compareAVCVersions()
     except Exception as e:
         print "[ERROR] Couldn't update KSP-AVC. %s" % e
         cfg.save()
@@ -52,16 +52,10 @@ def main():
     mods = modFinder.find(cfg)
     for mod in mods:
         try:
-            modname = mod['NAME']
-            print "[ADD-ON] %s" % modname
-
-            updateRequired = verComp.compareMod(mod)
-            if updateRequired:
-                print "  [UPDATE] Latest version: %s, Installed version: %s" % \
-                    (comp.getVersion('r'), comp.getVersion('l'))
-                toUpdate.add(modname)
+            if verComp.compareMod(mod):
+                toUpdate.add(mod['NAME'])
         except Exception as e:
-            print "[ERROR] Couldn't update module %s because %s" % modname, e
+            print "[ERROR] Couldn't update module %s because %s" % mod['NAME'], e
 
     # End for
     if len(toUpdate):

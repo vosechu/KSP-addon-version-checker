@@ -22,7 +22,31 @@ import json, os
 from urllib2 import urlopen
 
 class VersionComparator(object):
-    """ Initialize the comparator. """
+    """ Discover whether AVC itself needs to be updated """
+    @classmethod
+    def compareAVCVersions(cls):
+        localVersion = os.path.join(os.path.expanduser('.'), 'KSP-AVC.version')
+        remoteVersion = cls.__getRemote(localVersion)
+        vc = cls(localVersion, remoteVersion)
+        return vc.compare()
+
+    """ Discover whether a mod needs to be updated """
+    @classmethod
+    def compareMod(cls, localVersion):
+        remoteVersion = cls.__getRemote(localVersion)
+        vc = cls(localVersion, remoteVersion)
+        return vc.compare()
+
+    """ Discover whether a mod needs an update by comparing hashes """
+    @classmethod
+    def compareByHash(cls, localVersion):
+        try:
+            remote = cls.__guessRemote()
+            vc = cls(localVersion, remoteVersion)
+            return vc.compareByHash()
+        except Exception as e:
+            print "[ERROR] Couldn't update module %s because %s" % local['NAME'], e
+
     def __init__(self, localVersion, remoteVersion):
         with open(localVersion, 'r') as f:
             self.local = json.load(f)
@@ -37,8 +61,7 @@ class VersionComparator(object):
         if not self.__compareURL():
             raise Exception("Remote version file reports different URL.")
         if not self.__compareVersion():
-            return "  [UPDATE] A new version(%s) of %s is available. (You have %s)" % \
-            (self.__getVersion('r'), self.local['NAME'], self.__getVersion('l'))
+            return true
 
     def __compareVersion(self):
         return self.__compareMajor and self.__compareMinor
@@ -66,26 +89,14 @@ class VersionComparator(object):
     def __compareName(self):
         return self.local['NAME'] == self.remote['NAME']
 
-""" Discover whether AVC itself needs to be updated """
-def compareAVCVersions():
-    localVersion = os.path.join(os.path.expanduser('.'), 'KSP-AVC.version')
-    remoteVersion = __getRemote(localVersion)
-    vc = VersionComparator(localVersion, remoteVersion)
-    return vc.compare()
+    @staticmethod
+    def __getRemote(fle):
+        if not os.path.exists(fle):
+            raise OSError("File not found.")
 
-""" Discover whether a mod needs to be updated """
-def compareMod(local):
-    remoteVersion = verComp.__getRemote(local['URL'])
-    vc = VersionComparator(localVersion, remoteVersion)
-    return vc.compare()
-
-def __getRemote(fle):
-    if not os.path.exists(fle):
-        raise OSError("File not found.")
-
-    with open(fle,'r') as f:
-        json_dec = json.load(f)
-    return json_dec['URL']
+        with open(fle,'r') as f:
+            json_dec = json.load(f)
+        return json_dec['URL']
 
 if __name__ == '__main__':
     print __doc__
